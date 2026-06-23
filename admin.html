@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - TradexaX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0a0f1c; color: #e2e8f0; }
+        .card { background: #1e2937; border-radius: 16px; padding: 24px; }
+        .tab-active { background: #3b82f6; color: white; }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-4xl font-bold mb-10 text-center">ADMIN DASHBOARD</h1>
+
+        <!-- Tabs -->
+        <div class="bg-[#1e2937] p-1 rounded-3xl flex mb-8 overflow-x-auto">
+            <button onclick="switchTab(0)" class="tab tab-active flex-1 py-4 rounded-3xl text-lg font-medium">Dashboard</button>
+            <button onclick="switchTab(1)" class="tab flex-1 py-4 rounded-3xl text-lg font-medium">Users</button>
+            <button onclick="switchTab(2)" class="tab flex-1 py-4 rounded-3xl text-lg font-medium">Wallet</button>
+            <button onclick="switchTab(3)" class="tab flex-1 py-4 rounded-3xl text-lg font-medium">Loans</button>
+            <button onclick="switchTab(4)" class="tab flex-1 py-4 rounded-3xl text-lg font-medium">Tickets</button>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="tab0" class="card">
+            <h2 class="text-2xl font-semibold mb-6">Global Settings</h2>
+            <div class="flex justify-between items-center">
+                <div>
+                    <strong>Force Win Mode</strong>
+                    <p class="text-sm text-slate-400">All user trades will win</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="force-win" class="sr-only peer" onchange="toggleForceWin()">
+                    <div class="w-14 h-8 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-600"></div>
+                    <span id="force-win-label" class="ml-3 text-sm font-medium">OFF</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Users -->
+        <div id="tab1" class="card hidden">
+            <h2 class="text-2xl font-semibold mb-6">Users</h2>
+            <div id="users-list" class="space-y-4"></div>
+        </div>
+
+        <!-- Wallet -->
+        <div id="tab2" class="card hidden">
+            <h2 class="text-2xl font-semibold mb-6">Main Wallets (Deposit Addresses)</h2>
+            <div class="space-y-8">
+                <div>
+                    <h4 class="font-semibold mb-3">USDT</h4>
+                    <input id="usdt-trc20" type="text" placeholder="TRC20" class="w-full bg-slate-800 p-4 rounded-2xl mb-2">
+                    <input id="usdt-erc20" type="text" placeholder="ERC20" class="w-full bg-slate-800 p-4 rounded-2xl">
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">USDC</h4>
+                    <input id="usdc-trc20" type="text" placeholder="TRC20" class="w-full bg-slate-800 p-4 rounded-2xl mb-2">
+                    <input id="usdc-erc20" type="text" placeholder="ERC20" class="w-full bg-slate-800 p-4 rounded-2xl">
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">BTC</h4>
+                    <input id="btc-mainnet" type="text" placeholder="Mainnet" class="w-full bg-slate-800 p-4 rounded-2xl mb-2">
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">ETH</h4>
+                    <input id="eth-erc20" type="text" placeholder="ERC20" class="w-full bg-slate-800 p-4 rounded-2xl">
+                </div>
+            </div>
+            <button onclick="saveAllWallets()" class="mt-8 w-full py-6 bg-blue-600 rounded-3xl text-lg font-semibold">Save All Wallets</button>
+        </div>
+
+        <!-- Loans -->
+        <div id="tab3" class="card hidden">
+            <h2 class="text-2xl font-semibold mb-6">Loan Requests</h2>
+            <p class="text-slate-400">No loan requests yet.</p>
+        </div>
+
+        <!-- Tickets -->
+        <div id="tab4" class="card hidden">
+            <h2 class="text-2xl font-semibold mb-6">Tickets</h2>
+            <p class="text-slate-400">No tickets yet.</p>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(n) {
+            document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+            document.getElementById('tab' + n).classList.remove('hidden');
+        }
+
+        function toggleForceWin() {
+            const isOn = document.getElementById('force-win').checked;
+            localStorage.setItem('forceWin', isOn);
+            document.getElementById('force-win-label').textContent = isOn ? "ON" : "OFF";
+        }
+
+        function saveAllWallets() {
+            alert("All wallets saved successfully.");
+        }
+
+        // Show user ID in Users tab
+        window.onload = () => {
+            document.getElementById('force-win').checked = localStorage.getItem('forceWin') === 'true';
+            document.getElementById('force-win-label').textContent = localStorage.getItem('forceWin') === 'true' ? "ON" : "OFF";
+
+            const userId = localStorage.getItem('userId') || '7842';
+            document.getElementById('users-list').innerHTML = `
+                <div class="card p-6">
+                    <div class="flex justify-between">
+                        <div>Active User</div>
+                        <div class="text-emerald-400">ID: ${userId}</div>
+                    </div>
+                </div>
+            `;
+        };
+    </script>
+</body>
+</html>
