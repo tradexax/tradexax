@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth - TradexaX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-[#0a0f1c] flex items-center justify-center">
+    <div class="card w-full max-w-md mx-4">
+        <h1 class="text-3xl font-bold text-center mb-8">TradexaX</h1>
+        
+        <div id="auth-tabs" class="flex mb-8 bg-slate-800 rounded-3xl p-1">
+            <button onclick="switchTab(0)" id="login-tab-btn" class="tab tab-active flex-1 py-4 rounded-3xl text-lg font-semibold">Login</button>
+            <button onclick="switchTab(1)" id="signup-tab-btn" class="tab flex-1 py-4 rounded-3xl text-lg font-semibold">Sign Up</button>
+        </div>
+
+        <!-- Login -->
+        <div id="login-tab">
+            <input id="login-email" type="email" placeholder="Email" class="w-full bg-slate-800 p-6 rounded-2xl mb-4" value="nyirimanajdamour@gmail.com">
+            <input id="login-password" type="password" placeholder="Password" class="w-full bg-slate-800 p-6 rounded-2xl mb-6" value="123456">
+            <button onclick="login()" class="w-full py-6 bg-emerald-600 rounded-3xl text-lg font-semibold">LOGIN</button>
+        </div>
+
+        <!-- Sign Up -->
+        <div id="signup-tab" class="hidden">
+            <input id="full-name" type="text" placeholder="Full Name" class="w-full bg-slate-800 p-6 rounded-2xl mb-4">
+            <input id="signup-email" type="email" placeholder="Email" class="w-full bg-slate-800 p-6 rounded-2xl mb-4">
+            <input id="signup-password" type="password" placeholder="Create Password" class="w-full bg-slate-800 p-6 rounded-2xl mb-4">
+            <input id="confirm-password" type="password" placeholder="Confirm Password" class="w-full bg-slate-800 p-6 rounded-2xl mb-6">
+            <button onclick="signup()" class="w-full py-6 bg-emerald-600 rounded-3xl text-lg font-semibold">SIGN UP & VERIFY DOCUMENT</button>
+            <p class="text-center text-slate-400 mt-4">Document verification required (Name must match)</p>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(n) {
+            document.getElementById('login-tab').classList.toggle('hidden', n !== 0);
+            document.getElementById('signup-tab').classList.toggle('hidden', n !== 1);
+            
+            document.getElementById('login-tab-btn').classList.toggle('tab-active', n === 0);
+            document.getElementById('signup-tab-btn').classList.toggle('tab-active', n === 1);
+        }
+
+        function login() {
+            localStorage.setItem('loggedIn', 'true');
+            localStorage.setItem('userId', Math.floor(1000 + Math.random() * 9000));
+            window.location.href = 'index.html';
+        }
+
+        function signup() {
+            const name = document.getElementById('full-name').value.trim();
+            const pass = document.getElementById('signup-password').value;
+            const confirmPass = document.getElementById('confirm-password').value;
+
+            if (!name || name.length < 3) {
+                alert("Please enter full name for verification");
+                return;
+            }
+            if (pass !== confirmPass) {
+                alert("❌ Passwords do not match");
+                return;
+            }
+            if (pass.length < 6) {
+                alert("Password must be at least 6 characters");
+                return;
+            }
+
+            alert(`✅ Account created for ${name}!\nDocument verification scheduled.\nYou can now login.`);
+            switchTab(0);
+        }
+    </script>
+</body>
+</html>
