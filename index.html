@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradexaX - Live Trading</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0a0f1c; color: #e2e8f0; font-family: Arial, sans-serif; }
+        .card { background: #1e2937; border-radius: 16px; padding: 24px; }
+    </style>
+</head>
+<body>
+    <header class="bg-[#111827] border-b border-slate-700 py-5">
+        <div class="max-w-7xl mx-auto px-8 flex justify-between items-center">
+            <div class="text-3xl font-bold text-blue-400">TradexaX</div>
+            <nav class="flex gap-8 text-sm font-medium">
+                <a href="index.html" class="text-blue-400">Dashboard</a>
+                <a href="trade.html">Trade</a>
+                <a href="deposit.html">Deposit</a>
+                <a href="withdraw.html">Withdraw</a>
+                <a href="auth.html">Account</a>
+            </nav>
+            <div>Balance: <span class="text-emerald-400 font-bold">$12,450 USDT</span></div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-8">
+        <h1 class="text-4xl font-bold mb-8">Welcome Back</h1>
+        
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="card">
+                <p class="text-slate-400">Deposited Balance</p>
+                <p class="text-5xl font-bold mt-2">$2,450</p>
+            </div>
+            <div class="card">
+                <p class="text-slate-400">Virtual Trading Balance</p>
+                <p class="text-5xl font-bold text-emerald-400 mt-2">$1,245,000</p>
+            </div>
+            <div class="card">
+                <p class="text-slate-400">Today's P&amp;L</p>
+                <p class="text-5xl font-bold text-emerald-400 mt-2">+$8,240</p>
+            </div>
+        </div>
+
+        <div class="card mt-8">
+            <h2 class="text-2xl mb-4">Your Level: <span class="text-yellow-400">Gold Premium ★</span></h2>
+            <p class="text-lg">Gold level gives you higher multipliers and better profit share on withdrawals.</p>
+        </div>
+    </main>
+</body>
+</html>

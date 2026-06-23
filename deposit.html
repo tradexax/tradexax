@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deposit - TradexaX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0a0f1c; color: #e2e8f0; }
+        .card { background: #1e2937; border-radius: 16px; padding: 28px; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <header class="bg-[#111827] border-b border-slate-700 py-5">
+        <div class="max-w-7xl mx-auto px-8 flex justify-between items-center">
+            <div class="text-3xl font-bold text-blue-400">TradexaX</div>
+            <nav class="flex gap-8 text-sm font-medium">
+                <a href="index.html">Dashboard</a>
+                <a href="trade.html">Trade</a>
+                <a href="deposit.html" class="text-blue-400">Deposit</a>
+                <a href="withdraw.html">Withdraw</a>
+                <a href="auth.html">Account</a>
+            </nav>
+            <div>Balance: <span class="text-emerald-400 font-bold">$12,450 USDT</span></div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-8">
+        <h1 class="text-4xl font-bold mb-8">Deposit Funds</h1>
+        <p class="text-slate-400 mb-8">Choose coin and network. Minimum deposit $10 equivalent.</p>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <!-- USDT -->
+            <div class="card hover:border-blue-500 border border-transparent cursor-pointer">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="text-4xl">💵</div>
+                    <div>
+                        <h3 class="text-2xl font-bold">USDT</h3>
+                        <p class="text-emerald-400">Tether</p>
+                    </div>
+                </div>
+                <p class="text-sm text-slate-400 mb-4">Recommended Networks</p>
+                <div class="flex gap-2">
+                    <span class="bg-slate-700 text-xs px-3 py-1 rounded-full">TRC20</span>
+                    <span class="bg-slate-700 text-xs px-3 py-1 rounded-full">ERC20</span>
+                </div>
+                <button onclick="selectDeposit('USDT')" class="mt-8 w-full bg-emerald-600 py-4 rounded-2xl font-bold">Deposit USDT</button>
+            </div>
+
+            <!-- BTC -->
+            <div class="card hover:border-blue-500 border border-transparent cursor-pointer">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="text-4xl">₿</div>
+                    <div>
+                        <h3 class="text-2xl font-bold">BTC</h3>
+                        <p class="text-emerald-400">Bitcoin</p>
+                    </div>
+                </div>
+                <button onclick="selectDeposit('BTC')" class="mt-8 w-full bg-emerald-600 py-4 rounded-2xl font-bold">Deposit BTC</button>
+            </div>
+
+            <!-- ETH -->
+            <div class="card hover:border-blue-500 border border-transparent cursor-pointer">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="text-4xl">Ξ</div>
+                    <div>
+                        <h3 class="text-2xl font-bold">ETH</h3>
+                        <p class="text-emerald-400">Ethereum</p>
+                    </div>
+                </div>
+                <button onclick="selectDeposit('ETH')" class="mt-8 w-full bg-emerald-600 py-4 rounded-2xl font-bold">Deposit ETH</button>
+            </div>
+        </div>
+
+        <div class="card mt-10">
+            <h2 class="text-2xl mb-6">Your Level: <span class="text-yellow-400">Gold Premium ★</span></h2>
+            <p class="text-lg">Deposit any amount and get up to <strong>100x virtual trading balance</strong> instantly after confirmation.</p>
+        </div>
+    </main>
+
+    <script>
+        function selectDeposit(coin) {
+            alert(`✅ Deposit address for ${coin} generated.\n\nSend ${coin} to the displayed address.\n\nAfter sending, paste the transaction hash to confirm.`);
+        }
+    </script>
+</body>
+</html>
