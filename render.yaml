@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: tradexax
+    env: static
+    buildCommand: ""
+    startCommand: ""
+    repo: https://github.com/tradexax/tradexax
