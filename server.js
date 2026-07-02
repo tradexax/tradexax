@@ -9,12 +9,12 @@ let users = [
   { id: 1, name: "Test User", email: "test@example.com", balance: 100000 }
 ];
 
-// Get users
+// Get users for Admin
 app.get('/users', (req, res) => {
   res.json(users);
 });
 
-// Update balance
+// Update balance from Admin
 app.post('/update-balance', (req, res) => {
   const { id, balance } = req.body;
   const user = users.find(u => u.id == id);
