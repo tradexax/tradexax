@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - TradexaX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0a0f1c; color: #e2e8f0; }
+        .card { background: #1e2937; border-radius: 16px; padding: 24px; }
+        .tab-active { background: #3b82f6; color: white; }
+        input { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 12px; border-radius: 8px; width: 100%; font-family: monospace; }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-4xl font-bold mb-10 text-center">ADMIN DASHBOARD</h1>
+        
+        <!-- Tabs -->
+        <div class="bg-[#1e2937] p-1 rounded-3xl flex mb-8 overflow-x-auto">
+            <button onclick="switchTab(0)" class="tab tab-active flex-1 py-4 rounded-3xl text-lg font-medium">Dashboard</button>
+            <button onclick="switchTab(1)" class="tab flex-1 py-4 rounded-3xl text-lg font-medium">Users</button>
+            <button onclick="switchTab(2)" class="tab flex-1 py-4 rounded-3xl text-lg font-medium">Wallet</button>
+            <button onclick="switchTab(3)" class="tab flex-1 py-4 rounded-3xl text-lg font-medium">Loans</button>
+            <button onclick="switchTab(4)" class="tab flex-1 py-4 rounded-3xl text-lg font-medium">Tickets</button>
+        </div>
+
+        <!-- Dashboard (Force Winning) -->
+        <div id="tab0" class="card">
+            <h2 class="text-2xl font-semibold mb-6">Force Winning Mode</h2>
+            <label class="flex items-center gap-4 text-lg">
+                <input id="force-win" type="checkbox" onchange="toggleForceWin()" class="w-6 h-6">
+                <span id="force-win-label">OFF</span>
+            </label>
+        </div>
+
+        <!-- Users -->
+        <div id="tab1" class="card hidden">
+            <h2 class="text-2xl font-semibold mb-6">Users</h2>
+            <div id="users-list"></div>
+        </div>
+
+        <!-- Wallet -->
+        <div id="tab2" class="card hidden">
+            <h2 class="text-2xl font-semibold mb-6">Main Wallets (Deposit Addresses)</h2>
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-emerald-400 mb-1">USDT - TRC20</label>
+                    <input id="usdt-trc" placeholder="Enter TRC20 address">
+                </div>
+                <div>
+                    <label class="block text-emerald-400 mb-1">USDT - ERC20</label>
+                    <input id="usdt-erc" placeholder="Enter ERC20 address">
+                </div>
+                <div>
+                    <label class="block text-emerald-400 mb-1">USDC - TRC20</label>
+                    <input id="usdc-trc" placeholder="Enter TRC20 address">
+                </div>
+                <div>
+                    <label class="block text-emerald-400 mb-1">USDC - ERC20</label>
+                    <input id="usdc-erc" placeholder="Enter ERC20 address">
+                </div>
+                <div>
+                    <label class="block text-emerald-400 mb-1">BTC - Mainnet</label>
+                    <input id="btc-main" placeholder="Enter BTC address">
+                </div>
+                <div>
+                    <label class="block text-emerald-400 mb-1">ETH - ERC20</label>
+                    <input id="eth-erc" placeholder="Enter ERC20 address">
+                </div>
+            </div>
+            <button onclick="saveWallets()" class="mt-8 w-full py-4 bg-blue-600 rounded-3xl text-lg font-semibold">Save All Wallets</button>
+        </div>
+
+        <!-- Loans -->
+        <div id="tab3" class="card hidden">
+            <h2 class="text-2xl font-semibold mb-6">Loan Requests</h2>
+            <p class="text-slate-400">No loan requests yet.</p>
+        </div>
+
+        <!-- Tickets -->
+        <div id="tab4" class="card hidden">
+            <h2 class="text-2xl font-semibold mb-6">Withdraw Tickets</h2>
+            <p class="text-slate-400">No withdraw requests yet.</p>
+        </div>
+    </div>
+
+    <script>
+        const apiBase = "https://tradexax-production.up.railway.app";
+
+        function switchTab(n) {
+            document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+            document.getElementById('tab' + n).classList.remove('hidden');
+            document.querySelectorAll('.tab').forEach((t, i) => {
+                t.classList.toggle('tab-active', i === n);
+            });
+        }
+
+        function toggleForceWin() {
+            const isOn = document.getElementById('force-win').checked;
+            localStorage.setItem('forceWin', isOn);
+            document.getElementById('force-win-label').textContent = isOn ? "ON" : "OFF";
+        }
+
+        function saveWallets() {
+            localStorage.setItem('walletUSDT_TRC20', document.getElementById('usdt-trc').value.trim());
+            localStorage.setItem('walletUSDT_ERC20', document.getElementById('usdt-erc').value.trim());
+            localStorage.setItem('walletUSDC_TRC20', document.getElementById('usdc-trc').value.trim());
+            localStorage.setItem('walletUSDC_ERC20', document.getElementById('usdc-erc').value.trim());
+            localStorage.setItem('walletBTC', document.getElementById('btc-main').value.trim());
+            localStorage.setItem('walletETH', document.getElementById('eth-erc').value.trim());
+            alert("✅ All Wallets Saved Successfully!");
+        }
+
+        // Load saved wallets on page load
+        function loadSavedWallets() {
+            const fields = {
+                'usdt-trc': 'walletUSDT_TRC20',
+                'usdt-erc': 'walletUSDT_ERC20',
+                'usdc-trc': 'walletUSDC_TRC20',
+                'usdc-erc': 'walletUSDC_ERC20',
+                'btc-main': 'walletBTC',
+                'eth-erc': 'walletETH'
+            };
+            Object.keys(fields).forEach(id => {
+                const saved = localStorage.getItem(fields[id]);
+                if (saved) document.getElementById(id).value = saved;
+            });
+        }
+
+        // Users and other functions remain the same...
+        async function loadUsers() { /* keep your existing loadUsers function */ }
+        async function updateBalance(userId) { /* keep your existing updateBalance function */ }
+
+        window.onload = () => {
+            loadSavedWallets();
+            const force = localStorage.getItem('forceWin') === 'true';
+            document.getElementById('force-win').checked = force;
+            document.getElementById('force-win-label').textContent = force ? "ON" : "OFF";
+            loadUsers();
+            switchTab(2); // Start on Wallet tab
+        };
+    </script>
+</body>
+</html>
