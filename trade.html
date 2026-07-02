@@ -98,8 +98,14 @@
         let history = [];
         let selectedMinutes = 1;
 
-        function isForceWin() {
-            return localStorage.getItem('forceWin') === 'true';
+        async function isForceWin() {
+            try {
+                const res = await fetch(`${apiBase}/settings/forcewin`);
+                const data = await res.json();
+                return data.forceWin === true;
+            } catch (e) {
+                return localStorage.getItem('forceWin') === 'true';
+            }
         }
 
         function changePair() {
@@ -142,16 +148,14 @@
         }
 
         async function endTrade(direction, amount) {
-            const isWin = isForceWin() ? true : Math.random() > 0.5;
+            const isWin = await isForceWin() ? true : Math.random() > 0.5;
             const profitRate = payout[selectedMinutes];
             const profit = isWin ? Math.round(amount * profitRate) : -amount;
 
-            // Update local balance
             let balance = parseFloat(localStorage.getItem('userBalance')) || 0;
             balance += profit;
             localStorage.setItem('userBalance', balance);
 
-            // Save to backend
             const userId = localStorage.getItem('userId');
             if (userId) {
                 try {
@@ -165,7 +169,6 @@
                 }
             }
 
-            // Add to history
             history.unshift({
                 direction: direction,
                 amount: amount,
