@@ -21,16 +21,17 @@
     <main class="max-w-7xl mx-auto p-6">
         <!-- Trading Pair -->
         <div class="mb-6">
-            <select id="pair" class="w-full bg-slate-800 p-5 rounded-2xl text-lg">
-                <option value="BTCUSDT">BTC/USDT</option>
-                <option value="ETHUSDT">ETH/USDT</option>
-                <option value="SOLUSDT">SOL/USDT</option>
+            <select id="pair" onchange="changePair()" class="w-full bg-slate-800 p-5 rounded-2xl text-lg">
+                <option value="BINANCE:BTCUSDT">BTC/USDT</option>
+                <option value="BINANCE:ETHUSDT">ETH/USDT</option>
+                <option value="BINANCE:SOLUSDT">SOL/USDT</option>
+                <option value="FX:XAUUSD">GOLD (XAU/USD)</option>
             </select>
         </div>
 
         <!-- Chart -->
         <div class="card mb-8" style="height: 420px;">
-            <iframe id="trading-chart" width="100%" height="400" frameborder="0" src="https://www.tradingview.com/widgetembed/?symbol=BINANCE:BTCUSDT&interval=1&theme=dark"></iframe>
+            <iframe id="trading-chart" width="100%" height="400" frameborder="0" allowfullscreen></iframe>
         </div>
 
         <!-- Time Options -->
@@ -68,6 +69,14 @@
     </main>
 
     <script>
+        let currentSymbol = "BINANCE:BTCUSDT";
+
+        function changePair() {
+            currentSymbol = document.getElementById('pair').value;
+            document.getElementById('trading-chart').src = `https://www.tradingview.com/widgetembed/?symbol=${currentSymbol}&interval=1&theme=dark`;
+        }
+
+        // ... (rest of your trading logic remains the same)
         const apiBase = "https://tradexax-production.up.railway.app";
         let selectedMinutes = 1;
 
@@ -142,6 +151,7 @@
             loadBalance();
             renderHistory();
             selectTime(1);
+            changePair(); // Load chart
         };
     </script>
 </body>
