@@ -37,13 +37,11 @@
             <div class="text-5xl font-bold mb-1" id="price-display">$64,007.59</div>
             <div class="text-emerald-400" id="change">+0.45% Today</div>
         </div>
-        <!-- Real Chart -->
         <div class="card mb-8">
             <div class="h-96">
                 <iframe id="chart-frame" width="100%" height="100%" src="https://www.tradingview.com/widgetembed/?symbol=BINANCE:BTCUSDT&interval=1&theme=dark" frameborder="0" allowfullscreen></iframe>
             </div>
         </div>
-        <!-- Binary Options -->
         <div class="card">
             <h3 class="font-semibold mb-6">Binary Options Trade</h3>
             <div class="mb-8">
@@ -78,13 +76,12 @@
                 <button onclick="placeTrade('DOWN')" class="flex-1 py-8 bg-red-600 hover:bg-red-500 rounded-3xl text-2xl font-bold">DOWN ↓</button>
             </div>
         </div>
-        <!-- Trade History -->
         <div class="card mt-8">
             <h3 class="font-semibold mb-6">Trade History</h3>
             <div id="history" class="space-y-3"></div>
         </div>
     </main>
-    <!-- Detail Modal -->
+
     <div id="detail-modal" class="modal">
         <div class="card w-full max-w-md mx-4">
             <h3 class="font-bold text-2xl mb-6">Trade Detail</h3>
@@ -92,33 +89,24 @@
             <button onclick="closeModal()" class="w-full mt-8 py-6 bg-slate-700 rounded-3xl">Close</button>
         </div>
     </div>
+
     <script>
+        const apiBase = "https://tradexax-production.up.railway.app";
         let timer;
         const payout = {1: 0.10, 2: 0.15, 3: 0.20, 5: 0.25};
         const limits = {1: 10000, 2: 20000, 3: 30000, 5: 999999};
         let history = [];
         let selectedMinutes = 1;
+
         function isForceWin() {
             return localStorage.getItem('forceWin') === 'true';
         }
+
         function changePair() {
             const symbol = document.getElementById('pair').value;
             document.getElementById('chart-frame').src = `https://www.tradingview.com/widgetembed/?symbol=${symbol}&interval=1&theme=dark`;
-            const prices = {
-                'BINANCE:BTCUSDT': '$64,007.59',
-                'BINANCE:ETHUSDT': '$3,456.78',
-                'BINANCE:SOLUSDT': '$142.35',
-                'BINANCE:XRPUSDT': '$0.52',
-                'BINANCE:ADAUSDT': '$0.45',
-                'BINANCE:BNBUSDT': '$585.23',
-                'BINANCE:AVAXUSDT': '$28.45',
-                'BINANCE:DOGEUSDT': '$0.12',
-                'BINANCE:LINKUSDT': '$13.67',
-                'BINANCE:TRXUSDT': '$0.16',
-                'FX_IDC:XAUUSD': '$2,650.45'
-            };
-            document.getElementById('price-display').textContent = prices[symbol] || '$64,007.59';
         }
+
         function selectExpiry(minutes, btn) {
             selectedMinutes = minutes;
             document.querySelectorAll('#expiry-buttons button').forEach(b => b.classList.remove('bg-emerald-600'));
@@ -126,15 +114,20 @@
             const max = limits[minutes];
             document.getElementById('limit-info').textContent = `Max: $${max.toLocaleString()}`;
             document.getElementById('investment').max = max;
-            if (parseFloat(document.getElementById('investment').value) > max) document.getElementById('investment').value = max;
+            if (parseFloat(document.getElementById('investment').value) > max) {
+                document.getElementById('investment').value = max;
+            }
         }
-        function placeTrade(direction) {
+
+        async function placeTrade(direction) {
             const amount = parseFloat(document.getElementById('investment').value);
             if (!amount) return alert("Enter amount");
             const max = limits[selectedMinutes];
-            if (amount > max) return alert(`Insufficient balance for this expiry. Max $${max}`);
+            if (amount > max) return alert(`Max amount for this time is $${max}`);
+
             document.getElementById('countdown').classList.remove('hidden');
             let seconds = selectedMinutes * 60;
+
             clearInterval(timer);
             timer = setInterval(() => {
                 seconds--;
@@ -143,18 +136,36 @@
                 document.getElementById('countdown').textContent = `${min}:${sec < 10 ? '0' : ''}${sec}`;
                 if (seconds <= 0) {
                     clearInterval(timer);
-                    endTrade(direction);
+                    endTrade(direction, amount);
                 }
             }, 1000);
         }
-        function endTrade(direction) {
-            const amount = parseFloat(document.getElementById('investment').value);
+
+        async function endTrade(direction, amount) {
             const isWin = isForceWin() ? true : Math.random() > 0.5;
             const profitRate = payout[selectedMinutes];
-            const profit = isWin ? amount * profitRate : -amount;
+            const profit = isWin ? Math.round(amount * profitRate) : -amount;
+
+            // Update local balance
             let balance = parseFloat(localStorage.getItem('userBalance')) || 0;
             balance += profit;
             localStorage.setItem('userBalance', balance);
+
+            // Save to backend
+            const userId = localStorage.getItem('userId');
+            if (userId) {
+                try {
+                    await fetch(`${apiBase}/update-balance`, {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({ id: userId, balance: balance })
+                    });
+                } catch (e) {
+                    console.error("Failed to sync balance");
+                }
+            }
+
+            // Add to history
             history.unshift({
                 direction: direction,
                 amount: amount,
@@ -163,18 +174,21 @@
                 status: isWin ? "WIN" : "LOSS",
                 rate: profitRate
             });
-            alert(isWin ? `✅ WIN! +$${profit.toFixed(2)} (${profitRate*100}%)` : `❌ LOSS -$${amount}`);
+
+            alert(isWin ? `✅ WIN! +$${profit} (${profitRate*100}%)` : `❌ LOSS -$${amount}`);
             updateHistory();
         }
+
         function updateHistory() {
             const container = document.getElementById('history');
             container.innerHTML = history.map((h, index) => `
                 <div onclick="showDetail(${index})" class="flex justify-between p-4 bg-[#111827] rounded-2xl cursor-pointer hover:bg-slate-700">
                     <div>${h.direction} • ${h.time}</div>
-                    <div class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">${h.status} $${h.profit.toFixed(2)}</div>
+                    <div class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">${h.status} $${h.profit}</div>
                 </div>
             `).join('');
         }
+
         function showDetail(index) {
             const h = history[index];
             const content = document.getElementById('detail-content');
@@ -184,11 +198,12 @@
                     <div class="flex justify-between"><span>Time</span><strong>${h.time}</strong></div>
                     <div class="flex justify-between"><span>Investment</span><strong>$${h.amount}</strong></div>
                     <div class="flex justify-between"><span>Result</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">${h.status}</strong></div>
-                    <div class="flex justify-between"><span>Profit</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">$${h.profit.toFixed(2)} (${h.rate*100}%)</strong></div>
+                    <div class="flex justify-between"><span>Profit</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">$${h.profit} (${h.rate*100}%)</strong></div>
                 </div>
             `;
             document.getElementById('detail-modal').style.display = 'flex';
         }
+
         function closeModal() {
             document.getElementById('detail-modal').style.display = 'none';
         }
