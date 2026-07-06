@@ -69,6 +69,8 @@
     </main>
 
     <script>
+        const apiBase = "https://tradexax-production.up.railway.app";
+        let selectedMinutes = 1;
         let currentSymbol = "BINANCE:BTCUSDT";
 
         function changePair() {
@@ -76,19 +78,19 @@
             document.getElementById('trading-chart').src = `https://www.tradingview.com/widgetembed/?symbol=${currentSymbol}&interval=1&theme=dark`;
         }
 
-        // ... (rest of your trading logic remains the same)
-        const apiBase = "https://tradexax-production.up.railway.app";
-        let selectedMinutes = 1;
-
         async function loadBalance() {
             const userId = localStorage.getItem('userId');
-            if (!userId) return;
+            if (!userId) return 0;
             try {
                 const res = await fetch(`${apiBase}/users`);
                 const users = await res.json();
                 const user = users.find(u => u.id == userId);
-                document.getElementById('current-balance').textContent = '$' + (user ? parseFloat(user.balance || 0).toLocaleString() : '0');
-            } catch (e) {}
+                const balance = user ? parseFloat(user.balance || 0) : 0;
+                document.getElementById('current-balance').textContent = '$' + balance.toLocaleString();
+                return balance;
+            } catch (e) {
+                return 0;
+            }
         }
 
         function selectTime(min) {
@@ -99,13 +101,14 @@
 
         async function placeTrade(direction) {
             let amount = parseFloat(document.getElementById('trade-amount').value);
-            if (!amount) return alert("Enter amount");
+            if (!amount || amount <= 0) return alert("Enter valid amount");
 
             const balance = await loadBalance();
             if (amount > balance) return alert("Insufficient balance");
 
             alert(`Trade started: ${direction} $${amount} for ${selectedMinutes} minutes...`);
 
+            // Simulate trade duration
             setTimeout(() => endTrade(direction, amount), selectedMinutes * 60 * 1000);
         }
 
@@ -115,7 +118,7 @@
             const rate = [0.10, 0.15, 0.20, 0.25][selectedMinutes-1] || 0.25;
             const profit = isWin ? Math.round(amount * rate) : -amount;
 
-            let balance = parseFloat(document.getElementById('current-balance').textContent.replace(/[$,]/g,'')) || 0;
+            let balance = parseFloat(document.getElementById('current-balance').textContent.replace(/[$,]/g, '')) || 0;
             balance += profit;
 
             const userId = localStorage.getItem('userId');
@@ -123,15 +126,22 @@
                 await fetch(`${apiBase}/update-balance`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({id: userId, balance})
+                    body: JSON.stringify({ id: userId, balance })
                 });
             }
 
-            alert(isWin ? `WIN +$${profit}` : `LOSS -$${amount}`);
+            alert(isWin ? `🎉 WIN +$${profit}` : `💥 LOSS -$${amount}`);
 
             let history = JSON.parse(localStorage.getItem('tradeHistory') || '[]');
-            history.unshift({time: new Date().toLocaleString(), direction, amount, result: isWin ? 'WIN' : 'LOSS', profit});
-            localStorage.setItem('tradeHistory', JSON.stringify(history.slice(0,10)));
+            history.unshift({
+                time: new Date().toLocaleString(),
+                direction, 
+                amount, 
+                result: isWin ? 'WIN' : 'LOSS', 
+                profit
+            });
+            localStorage.setItem('tradeHistory', JSON.stringify(history.slice(0, 10)));
+
             renderHistory();
             loadBalance();
         }
@@ -142,7 +152,7 @@
             container.innerHTML = history.map(h => `
                 <div class="flex justify-between bg-[#111827] p-4 rounded-2xl">
                     <div>${h.direction} • ${h.time}</div>
-                    <div class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">${h.result} $${h.profit}</div>
+                    <div class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'} font-semibold">${h.result} $${h.profit}</div>
                 </div>
             `).join('');
         }
@@ -151,7 +161,7 @@
             loadBalance();
             renderHistory();
             selectTime(1);
-            changePair(); // Load chart
+            changePair();
         };
     </script>
 </body>
