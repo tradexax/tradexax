@@ -38,45 +38,115 @@
         </div>
     </main>
 
-    <!-- Deposit & Withdraw Modals (same as before) -->
-    <div id="deposit-modal" class="modal"> ... (keep your deposit modal) </div>
-    <div id="withdraw-modal" class="modal"> ... (keep your withdraw modal) </div>
+    <!-- DEPOSIT MODAL -->
+    <div id="deposit-modal" class="modal">
+        <div class="card w-full max-w-md mx-4">
+            <h2 class="text-2xl font-bold mb-6">Deposit</h2>
+            <select id="deposit-coin" onchange="updateDepositAddress()" class="w-full bg-slate-800 p-4 rounded-2xl mb-4">
+                <option value="USDT">USDT</option>
+                <option value="USDC">USDC</option>
+                <option value="BTC">BTC</option>
+                <option value="ETH">ETH</option>
+            </select>
+            <select id="deposit-network" onchange="updateDepositAddress()" class="w-full bg-slate-800 p-4 rounded-2xl mb-4"></select>
+            <input id="deposit-amount" type="number" placeholder="Amount" class="w-full bg-slate-800 p-4 rounded-2xl mb-4">
+            <div id="deposit-address" class="bg-slate-900 p-4 rounded-2xl mb-6 font-mono text-sm break-all"></div>
+            <button onclick="confirmDeposit()" class="w-full py-4 bg-emerald-600 rounded-3xl mb-3">Confirm Deposit</button>
+            <button onclick="closeDepositModal()" class="w-full py-4 bg-slate-700 rounded-3xl">Cancel</button>
+        </div>
+    </div>
+
+    <!-- WITHDRAW MODAL -->
+    <div id="withdraw-modal" class="modal">
+        <div class="card w-full max-w-md mx-4">
+            <h2 class="text-2xl font-bold mb-6">Withdraw</h2>
+            <select id="withdraw-coin" onchange="updateWithdrawNetwork()" class="w-full bg-slate-800 p-4 rounded-2xl mb-4">
+                <option value="USDT">USDT</option>
+                <option value="USDC">USDC</option>
+                <option value="BTC">BTC</option>
+                <option value="ETH">ETH</option>
+            </select>
+            <select id="withdraw-network" class="w-full bg-slate-800 p-4 rounded-2xl mb-4"></select>
+            <input id="withdraw-address" type="text" placeholder="Your Wallet Address" class="w-full bg-slate-800 p-4 rounded-2xl mb-4">
+            <input id="withdraw-amount" type="number" placeholder="Amount" class="w-full bg-slate-800 p-4 rounded-2xl mb-6">
+            <button onclick="processWithdraw()" class="w-full py-4 bg-red-600 rounded-3xl mb-3">Confirm Withdraw</button>
+            <button onclick="closeWithdrawModal()" class="w-full py-4 bg-slate-700 rounded-3xl">Cancel</button>
+        </div>
+    </div>
 
     <script>
         const apiBase = "https://tradexax-production.up.railway.app";
 
         async function loadBalance() {
             const userId = localStorage.getItem('userId');
-            if (!userId) {
-                document.getElementById('total-assets').textContent = '$0';
-                return;
-            }
+            if (!userId) return;
             try {
                 const res = await fetch(`${apiBase}/users`);
                 const users = await res.json();
                 const user = users.find(u => u.id == userId);
                 const balance = user ? parseFloat(user.balance || 0) : 0;
                 document.getElementById('total-assets').textContent = '$' + balance.toLocaleString();
-            } catch (e) {
-                console.error("Failed to load balance");
-            }
+            } catch (e) {}
+        }
+        setInterval(loadBalance, 2000);
+        window.onload = loadBalance;
+
+        // Deposit Functions
+        function showDeposit() {
+            document.getElementById('deposit-modal').style.display = 'flex';
+            updateDepositAddress();
+        }
+        function closeDepositModal() {
+            document.getElementById('deposit-modal').style.display = 'none';
+        }
+        function updateDepositAddress() {
+            const coin = document.getElementById('deposit-coin').value;
+            const network = document.getElementById('deposit-network').value;
+            let key = `wallet${coin}_${network}`;
+            if (coin === 'BTC') key = 'walletBTC';
+            if (coin === 'ETH') key = 'walletETH';
+            const address = localStorage.getItem(key) || "No address saved from Admin";
+            document.getElementById('deposit-address').textContent = address;
+        }
+        function confirmDeposit() {
+            const amount = document.getElementById('deposit-amount').value;
+            if (!amount) return alert("Enter amount");
+            alert(`✅ Deposit request of $${amount} sent to Admin.`);
+            closeDepositModal();
         }
 
-        // Auto refresh every 2 seconds
-        setInterval(loadBalance, 2000);
-
-        // Keep your existing Deposit and Withdraw functions here...
-        function showDeposit() { /* your code */ }
-        function closeDepositModal() { /* your code */ }
-        function updateDepositAddress() { /* your code */ }
-        function confirmDeposit() { /* your code */ }
-
-        function showWithdraw() { /* your code */ }
-        function closeWithdrawModal() { /* your code */ }
-        function updateWithdrawNetwork() { /* your code */ }
-        function processWithdraw() { /* your code */ }
-
-        window.onload = loadBalance;
+        // Withdraw Functions
+        function showWithdraw() {
+            document.getElementById('withdraw-modal').style.display = 'flex';
+            updateWithdrawNetwork();
+        }
+        function closeWithdrawModal() {
+            document.getElementById('withdraw-modal').style.display = 'none';
+        }
+        function updateWithdrawNetwork() {
+            const coin = document.getElementById('withdraw-coin').value;
+            const sel = document.getElementById('withdraw-network');
+            sel.innerHTML = '';
+            if (coin === 'USDT' || coin === 'USDC') {
+                sel.innerHTML = `<option value="TRC20">TRC20</option><option value="ERC20">ERC20</option>`;
+            } else if (coin === 'ETH') {
+                sel.innerHTML = `<option value="ERC20">ERC20</option>`;
+            } else if (coin === 'BTC') {
+                sel.innerHTML = `<option value="Mainnet">Mainnet</option>`;
+            }
+        }
+        function processWithdraw() {
+            const coin = document.getElementById('withdraw-coin').value;
+            const network = document.getElementById('withdraw-network').value;
+            const address = document.getElementById('withdraw-address').value.trim();
+            const amount = document.getElementById('withdraw-amount').value;
+            if (!address || !amount) return alert("Fill all fields");
+            let tickets = JSON.parse(localStorage.getItem('tickets') || '[]');
+            tickets.push({id: Date.now(), userId: localStorage.getItem('userId'), coin, network, amount, address, time: new Date().toLocaleString()});
+            localStorage.setItem('tickets', JSON.stringify(tickets));
+            alert(`✅ Withdraw request of $${amount} ${coin} sent to Admin Tickets!`);
+            closeWithdrawModal();
+        }
     </script>
 </body>
 </html>
