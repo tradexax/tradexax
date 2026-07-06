@@ -94,7 +94,6 @@
         setInterval(loadBalance, 2000);
         window.onload = loadBalance;
 
-        // DEPOSIT
         function showDeposit() {
             document.getElementById('deposit-modal').style.display = 'flex';
             updateDepositAddress();
@@ -102,15 +101,14 @@
         function closeDepositModal() {
             document.getElementById('deposit-modal').style.display = 'none';
         }
+
         function updateDepositAddress() {
             const coin = document.getElementById('deposit-coin').value;
             const networkSelect = document.getElementById('deposit-network');
             networkSelect.innerHTML = '';
 
-            let networks = [];
-            if (coin === 'USDT' || coin === 'USDC') networks = ['TRC20', 'ERC20'];
-            else if (coin === 'ETH') networks = ['ERC20'];
-            else if (coin === 'BTC') networks = ['Mainnet'];
+            let networks = coin === 'USDT' || coin === 'USDC' ? ['TRC20', 'ERC20'] : 
+                           coin === 'ETH' ? ['ERC20'] : ['Mainnet'];
 
             networks.forEach(n => {
                 const opt = document.createElement('option');
@@ -127,6 +125,7 @@
             const address = localStorage.getItem(key) || "No address saved from Admin";
             document.getElementById('deposit-address').textContent = address;
         }
+
         function confirmDeposit() {
             const amount = document.getElementById('deposit-amount').value;
             if (!amount) return alert("Enter amount");
@@ -134,7 +133,6 @@
             closeDepositModal();
         }
 
-        // WITHDRAW
         function showWithdraw() {
             document.getElementById('withdraw-modal').style.display = 'flex';
             updateWithdrawNetwork();
