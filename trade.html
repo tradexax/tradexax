@@ -8,6 +8,7 @@
     <style>
         body { background: #0a0f1c; color: #e2e8f0; }
         .card { background: #1e2937; border-radius: 20px; padding: 24px; }
+        .countdown { font-size: 3rem; font-weight: bold; color: #fbbf24; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -19,7 +20,6 @@
     </header>
 
     <main class="max-w-7xl mx-auto p-6">
-        <!-- Trading Pair -->
         <div class="mb-6">
             <select id="pair" onchange="changePair()" class="w-full bg-slate-800 p-5 rounded-2xl text-lg">
                 <option value="BINANCE:BTCUSDT">BTC/USDT</option>
@@ -29,12 +29,10 @@
             </select>
         </div>
 
-        <!-- Chart -->
         <div class="card mb-8" style="height: 420px;">
             <iframe id="trading-chart" width="100%" height="400" frameborder="0" allowfullscreen></iframe>
         </div>
 
-        <!-- Time Options -->
         <div class="grid grid-cols-2 gap-4 mb-8">
             <button onclick="selectTime(1)" id="time1" class="time-btn card text-center py-4">1 Min (Max 10K, +10%)</button>
             <button onclick="selectTime(2)" id="time2" class="time-btn card text-center py-4">2 Min (Max 20K, +15%)</button>
@@ -42,12 +40,11 @@
             <button onclick="selectTime(5)" id="time5" class="time-btn card text-center py-4">5 Min (No Limit, +25%)</button>
         </div>
 
-        <!-- Amount -->
         <div class="card mb-8">
             <div class="flex justify-between mb-6">
                 <div>
-                    <div class="text-sm text-slate-400">Amount</div>
-                    <input id="trade-amount" type="number" class="w-full bg-slate-900 text-4xl font-bold p-4 rounded-2xl" placeholder="0">
+                    <div class="text-sm text-slate-400">Amount (USDT)</div>
+                    <input id="trade-amount" type="number" class="w-full bg-slate-900 text-4xl font-bold p-4 rounded-2xl" placeholder="100">
                 </div>
                 <div class="text-right">
                     <div class="text-sm text-slate-400">Balance</div>
@@ -61,7 +58,12 @@
             </div>
         </div>
 
-        <!-- History -->
+        <!-- Countdown -->
+        <div id="countdown-container" class="card hidden mb-8 text-center">
+            <div class="text-slate-400">Time Remaining</div>
+            <div id="countdown" class="countdown">00:00</div>
+        </div>
+
         <div class="card">
             <h3 class="text-xl font-semibold mb-4">Trade History</h3>
             <div id="history" class="space-y-3"></div>
@@ -71,11 +73,17 @@
     <script>
         const apiBase = "https://tradexax-production.up.railway.app";
         let selectedMinutes = 1;
-        let currentSymbol = "BINANCE:BTCUSDT";
+        let timer = null;
 
         function changePair() {
-            currentSymbol = document.getElementById('pair').value;
-            document.getElementById('trading-chart').src = `https://www.tradingview.com/widgetembed/?symbol=${currentSymbol}&interval=1&theme=dark`;
+            const symbol = document.getElementById('pair').value;
+            document.getElementById('trading-chart').src = `https://www.tradingview.com/widgetembed/?symbol=${symbol}&interval=1&theme=dark`;
+        }
+
+        function selectTime(min) {
+            selectedMinutes = min;
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('ring-2', 'ring-blue-500'));
+            document.getElementById('time' + min).classList.add('ring-2', 'ring-blue-500');
         }
 
         async function loadBalance() {
@@ -85,65 +93,75 @@
                 const res = await fetch(`${apiBase}/users`);
                 const users = await res.json();
                 const user = users.find(u => u.id == userId);
-                const balance = user ? parseFloat(user.balance || 0) : 0;
-                document.getElementById('current-balance').textContent = '$' + balance.toLocaleString();
-                return balance;
-            } catch (e) {
-                return 0;
-            }
+                return user ? parseFloat(user.balance || 0) : 0;
+            } catch (e) { return 0; }
         }
 
-        function selectTime(min) {
-            selectedMinutes = min;
-            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('ring-2', 'ring-blue-500'));
-            document.getElementById('time' + min).classList.add('ring-2', 'ring-blue-500');
+        async function updateBalance(newBalance) {
+            const userId = localStorage.getItem('userId');
+            if (!userId) return;
+            try {
+                await fetch(`${apiBase}/update-balance`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({id: userId, balance: newBalance})
+                });
+            } catch (e) {}
+        }
+
+        function startCountdown(seconds) {
+            clearInterval(timer);
+            document.getElementById('countdown-container').classList.remove('hidden');
+            let timeLeft = seconds;
+
+            timer = setInterval(() => {
+                const m = Math.floor(timeLeft / 60);
+                const s = timeLeft % 60;
+                document.getElementById('countdown').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+                timeLeft--;
+                if (timeLeft < 0) {
+                    clearInterval(timer);
+                    document.getElementById('countdown-container').classList.add('hidden');
+                }
+            }, 1000);
         }
 
         async function placeTrade(direction) {
-            let amount = parseFloat(document.getElementById('trade-amount').value);
-            if (!amount || amount <= 0) return alert("Enter valid amount");
+            const amount = parseFloat(document.getElementById('trade-amount').value);
+            if (!amount) return alert("Enter amount");
 
             const balance = await loadBalance();
             if (amount > balance) return alert("Insufficient balance");
 
             alert(`Trade started: ${direction} $${amount} for ${selectedMinutes} minutes...`);
+            startCountdown(selectedMinutes * 60);
 
-            // Simulate trade duration
             setTimeout(() => endTrade(direction, amount), selectedMinutes * 60 * 1000);
         }
 
         async function endTrade(direction, amount) {
             const isForceWin = localStorage.getItem('forceWin') === 'true';
             const isWin = isForceWin || Math.random() > 0.45;
-            const rate = [0.10, 0.15, 0.20, 0.25][selectedMinutes-1] || 0.25;
+
+            let rate = 0.10;
+            if (selectedMinutes === 2) rate = 0.15;
+            else if (selectedMinutes === 3) rate = 0.20;
+            else if (selectedMinutes >= 5) rate = 0.25;
+
             const profit = isWin ? Math.round(amount * rate) : -amount;
+            let current = await loadBalance();
+            const newBalance = current + profit;
 
-            let balance = parseFloat(document.getElementById('current-balance').textContent.replace(/[$,]/g, '')) || 0;
-            balance += profit;
-
-            const userId = localStorage.getItem('userId');
-            if (userId) {
-                await fetch(`${apiBase}/update-balance`, {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ id: userId, balance })
-                });
-            }
-
-            alert(isWin ? `🎉 WIN +$${profit}` : `💥 LOSS -$${amount}`);
+            await updateBalance(newBalance);
 
             let history = JSON.parse(localStorage.getItem('tradeHistory') || '[]');
-            history.unshift({
-                time: new Date().toLocaleString(),
-                direction, 
-                amount, 
-                result: isWin ? 'WIN' : 'LOSS', 
-                profit
-            });
-            localStorage.setItem('tradeHistory', JSON.stringify(history.slice(0, 10)));
+            history.unshift({ time: new Date().toLocaleString(), direction, amount, result: isWin ? 'WIN' : 'LOSS', profit });
+            localStorage.setItem('tradeHistory', JSON.stringify(history.slice(0,10)));
 
             renderHistory();
-            loadBalance();
+            await loadBalance();
+
+            alert(isWin ? `🎉 WIN +$${profit}` : `💥 LOSS -$${amount}`);
         }
 
         function renderHistory() {
@@ -158,10 +176,10 @@
         }
 
         window.onload = () => {
-            loadBalance();
+            changePair();
             renderHistory();
             selectTime(1);
-            changePair();
+            loadBalance();
         };
     </script>
 </body>
