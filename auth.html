@@ -7,10 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-[#0a0f1c] flex items-center justify-center">
-    <div class="card w-full max-w-md mx-4">
+    <div class="w-full max-w-md mx-4 bg-[#1e2937] rounded-3xl p-8">
         <h1 class="text-3xl font-bold text-center mb-8">TradexaX</h1>
    
-        <div id="auth-tabs" class="flex mb-8 bg-slate-800 rounded-3xl p-1">
+        <div class="flex mb-8 bg-slate-800 rounded-3xl p-1">
             <button onclick="switchTab(0)" id="login-tab-btn" class="tab tab-active flex-1 py-4 rounded-3xl text-lg font-semibold">Login</button>
             <button onclick="switchTab(1)" id="signup-tab-btn" class="tab flex-1 py-4 rounded-3xl text-lg font-semibold">Sign Up</button>
         </div>
@@ -51,39 +51,30 @@
             const name = document.getElementById('full-name').value.trim();
             const email = document.getElementById('signup-email').value.trim();
             const pass = document.getElementById('signup-password').value;
-            const confirmPass = document.getElementById('confirm-password').value;
+            const confirm = document.getElementById('confirm-password').value;
 
-            if (!name || name.length < 3) {
-                alert("Please enter full name");
+            if (!name || !email || pass.length < 6) {
+                alert("Please fill all fields correctly");
                 return;
             }
-            if (!email) {
-                alert("Please enter email");
-                return;
-            }
-            if (pass !== confirmPass) {
-                alert("❌ Passwords do not match");
-                return;
-            }
-            if (pass.length < 6) {
-                alert("Password must be at least 6 characters");
+            if (pass !== confirm) {
+                alert("Passwords do not match");
                 return;
             }
 
             fetch(`${apiBase}/auth/signup`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, email })
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({name, email})
             })
             .then(res => res.json())
             .then(data => {
                 localStorage.setItem('loggedIn', 'true');
                 localStorage.setItem('userId', data.id || Math.floor(1000 + Math.random() * 9000));
-                alert(`✅ Account created!\nUser ID: ${data.id || 'Generated'}`);
+                alert("✅ Account created successfully!");
                 window.location.href = 'index.html';
             })
-            .catch(err => {
-                console.error(err);
+            .catch(() => {
                 alert("Cannot connect to server. Please try again later.");
             });
         }
