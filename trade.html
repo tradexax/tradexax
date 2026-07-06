@@ -20,6 +20,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto p-6">
+        <!-- Pair -->
         <div class="mb-6">
             <select id="pair" onchange="changePair()" class="w-full bg-slate-800 p-5 rounded-2xl text-lg">
                 <option value="BINANCE:BTCUSDT">BTC/USDT</option>
@@ -29,10 +30,12 @@
             </select>
         </div>
 
+        <!-- Chart -->
         <div class="card mb-8" style="height: 420px;">
             <iframe id="trading-chart" width="100%" height="400" frameborder="0" allowfullscreen></iframe>
         </div>
 
+        <!-- Time Options -->
         <div class="grid grid-cols-2 gap-4 mb-8">
             <button onclick="selectTime(1)" id="time1" class="time-btn card text-center py-4">1 Min (Max 10K, +10%)</button>
             <button onclick="selectTime(2)" id="time2" class="time-btn card text-center py-4">2 Min (Max 20K, +15%)</button>
@@ -40,6 +43,7 @@
             <button onclick="selectTime(5)" id="time5" class="time-btn card text-center py-4">5 Min (No Limit, +25%)</button>
         </div>
 
+        <!-- Amount + Balance -->
         <div class="card mb-8">
             <div class="flex justify-between mb-6">
                 <div>
@@ -64,16 +68,27 @@
             <div id="countdown" class="countdown">00:00</div>
         </div>
 
+        <!-- Trade History -->
         <div class="card">
             <h3 class="text-xl font-semibold mb-4">Trade History</h3>
             <div id="history" class="space-y-3"></div>
         </div>
     </main>
 
+    <!-- Trade Detail Modal -->
+    <div id="detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="card w-full max-w-md mx-4">
+            <h3 class="text-xl font-bold mb-6">Trade Detail</h3>
+            <div id="detail-content" class="space-y-4 text-lg"></div>
+            <button onclick="closeDetailModal()" class="mt-8 w-full py-4 bg-slate-700 rounded-3xl">Close</button>
+        </div>
+    </div>
+
     <script>
         const apiBase = "https://tradexax-production.up.railway.app";
         let selectedMinutes = 1;
         let timer = null;
+        let tradeHistoryData = [];
 
         function changePair() {
             const symbol = document.getElementById('pair').value;
@@ -93,7 +108,9 @@
                 const res = await fetch(`${apiBase}/users`);
                 const users = await res.json();
                 const user = users.find(u => u.id == userId);
-                return user ? parseFloat(user.balance || 0) : 0;
+                const balance = user ? parseFloat(user.balance || 0) : 0;
+                document.getElementById('current-balance').textContent = '$' + balance.toLocaleString();
+                return balance;
             } catch (e) { return 0; }
         }
 
@@ -128,7 +145,7 @@
 
         async function placeTrade(direction) {
             const amount = parseFloat(document.getElementById('trade-amount').value);
-            if (!amount) return alert("Enter amount");
+            if (!amount || amount <= 0) return alert("Enter valid amount");
 
             const balance = await loadBalance();
             if (amount > balance) return alert("Insufficient balance");
@@ -149,14 +166,25 @@
             else if (selectedMinutes >= 5) rate = 0.25;
 
             const profit = isWin ? Math.round(amount * rate) : -amount;
-            let current = await loadBalance();
-            const newBalance = current + profit;
+            let currentBalance = await loadBalance();
+            const newBalance = currentBalance + profit;
 
             await updateBalance(newBalance);
 
+            // Save to history
+            const trade = {
+                time: new Date().toLocaleString(),
+                direction,
+                amount,
+                result: isWin ? 'WIN' : 'LOSS',
+                profit,
+                rate: rate * 100
+            };
+
             let history = JSON.parse(localStorage.getItem('tradeHistory') || '[]');
-            history.unshift({ time: new Date().toLocaleString(), direction, amount, result: isWin ? 'WIN' : 'LOSS', profit });
-            localStorage.setItem('tradeHistory', JSON.stringify(history.slice(0,10)));
+            history.unshift(trade);
+            localStorage.setItem('tradeHistory', JSON.stringify(history.slice(0, 20)));
+            tradeHistoryData = history;
 
             renderHistory();
             await loadBalance();
@@ -167,12 +195,36 @@
         function renderHistory() {
             const container = document.getElementById('history');
             const history = JSON.parse(localStorage.getItem('tradeHistory') || '[]');
-            container.innerHTML = history.map(h => `
-                <div class="flex justify-between bg-[#111827] p-4 rounded-2xl">
+            tradeHistoryData = history;
+
+            container.innerHTML = history.map((h, index) => `
+                <div onclick="showTradeDetail(${index})" class="flex justify-between bg-[#111827] p-4 rounded-2xl cursor-pointer hover:bg-slate-800">
                     <div>${h.direction} • ${h.time}</div>
-                    <div class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'} font-semibold">${h.result} $${h.profit}</div>
+                    <div class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'} font-semibold">
+                        ${h.result} $${h.profit}
+                    </div>
                 </div>
             `).join('');
+        }
+
+        function showTradeDetail(index) {
+            const h = tradeHistoryData[index];
+            const content = document.getElementById('detail-content');
+            content.innerHTML = `
+                <div class="flex justify-between"><span>Direction</span><strong>${h.direction}</strong></div>
+                <div class="flex justify-between"><span>Time</span><strong>${h.time}</strong></div>
+                <div class="flex justify-between"><span>Investment</span><strong>$${h.amount}</strong></div>
+                <div class="flex justify-between"><span>Result</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">${h.result}</strong></div>
+                <div class="flex justify-between"><span>Profit</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">$${h.profit} (${h.rate || 10}%)</strong></div>
+            `;
+            document.getElementById('detail-modal').classList.remove('hidden');
+            document.getElementById('detail-modal').classList.add('flex');
+        }
+
+        function closeDetailModal() {
+            const modal = document.getElementById('detail-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
         }
 
         window.onload = () => {
