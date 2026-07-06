@@ -78,6 +78,25 @@
     </div>
 
     <script>
+        const apiBase = "https://tradexax-production.up.railway.app";
+
+        async function loadBalance() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) return;
+            try {
+                const res = await fetch(`${apiBase}/users`);
+                const users = await res.json();
+                const user = users.find(u => u.id == userId);
+                const balance = user ? parseFloat(user.balance || 0) : 0;
+                document.getElementById('total-assets').textContent = '$' + balance.toLocaleString();
+            } catch (e) {
+                console.error("Balance load failed");
+            }
+        }
+
+        // Auto refresh balance every 3 seconds
+        setInterval(loadBalance, 3000);
+
         function showDeposit() {
             document.getElementById('deposit-modal').style.display = 'flex';
             updateDepositAddress();
@@ -109,7 +128,7 @@
             closeDepositModal();
         }
 
-        // Withdraw
+        // Withdraw functions (same as before)
         function showWithdraw() {
             document.getElementById('withdraw-modal').style.display = 'flex';
             updateWithdrawNetwork();
@@ -149,6 +168,10 @@
             alert("✅ Withdraw request sent to Admin Tickets!");
             closeWithdrawModal();
         }
+
+        window.onload = () => {
+            loadBalance();
+        };
     </script>
 </body>
 </html>
