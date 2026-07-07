@@ -69,15 +69,20 @@
         </div>
     </main>
 
+    <!-- Trade Detail Modal (Professional like your reference) -->
+    <div id="detail-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+        <div class="card w-full max-w-md mx-4">
+            <h3 class="text-2xl font-bold mb-6 text-center">Trade Detail</h3>
+            <div id="detail-content" class="space-y-5 text-lg"></div>
+            <button onclick="closeDetailModal()" class="mt-8 w-full py-4 bg-slate-700 rounded-3xl text-lg">Close</button>
+        </div>
+    </div>
+
     <script>
         const apiBase = "https://tradexax-production.up.railway.app";
         let selectedMinutes = 1;
         let timer = null;
-
-        function getUserKey() {
-            const userId = localStorage.getItem('userId') || 'default';
-            return 'tradeHistory_' + userId;
-        }
+        let tradeHistoryData = [];
 
         function changePair() {
             const symbol = document.getElementById('pair').value;
@@ -165,9 +170,11 @@
                 direction,
                 amount,
                 result: isWin ? 'WIN' : 'LOSS',
-                profit
+                profit,
+                rate: rate * 100
             });
             localStorage.setItem(getUserKey(), JSON.stringify(history.slice(0, 20)));
+            tradeHistoryData = history;
 
             renderHistory();
             await loadBalance();
@@ -175,15 +182,41 @@
             alert(isWin ? `🎉 WIN +$${profit}` : `💥 LOSS -$${amount}`);
         }
 
+        function getUserKey() {
+            return 'tradeHistory_' + (localStorage.getItem('userId') || 'default');
+        }
+
         function renderHistory() {
             const container = document.getElementById('history');
             const history = JSON.parse(localStorage.getItem(getUserKey()) || '[]');
-            container.innerHTML = history.map(h => `
-                <div class="flex justify-between bg-[#111827] p-4 rounded-2xl">
+            tradeHistoryData = history;
+
+            container.innerHTML = history.map((h, index) => `
+                <div onclick="showTradeDetail(${index})" class="flex justify-between bg-[#111827] p-4 rounded-2xl cursor-pointer hover:bg-slate-800">
                     <div>${h.direction} • ${h.time}</div>
                     <div class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'} font-semibold">${h.result} $${h.profit}</div>
                 </div>
             `).join('');
+        }
+
+        function showTradeDetail(index) {
+            const h = tradeHistoryData[index];
+            const content = document.getElementById('detail-content');
+            content.innerHTML = `
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Direction</span><strong>${h.direction}</strong></div>
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Time</span><strong>${h.time}</strong></div>
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Investment</span><strong>$${h.amount}</strong></div>
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Result</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">${h.result}</strong></div>
+                <div class="flex justify-between py-2"><span>Profit</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">$${h.profit} (${h.rate || 10}%)</strong></div>
+            `;
+            document.getElementById('detail-modal').classList.remove('hidden');
+            document.getElementById('detail-modal').classList.add('flex');
+        }
+
+        function closeDetailModal() {
+            const modal = document.getElementById('detail-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
         }
 
         window.onload = () => {
