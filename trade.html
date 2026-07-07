@@ -163,9 +163,8 @@
         }
 
         async function endTrade(direction, amount) {
-            // VERY STRONG FORCE WIN FOR SAFARI
+            // STRONGEST FORCE WIN - Check localStorage + try backend
             let isForceWin = localStorage.getItem('forceWin') === 'true';
-            // Extra check for Safari caching
             if (!isForceWin) {
                 try {
                     const res = await fetch(`${apiBase}/force-win-status`);
