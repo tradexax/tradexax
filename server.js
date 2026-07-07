@@ -6,7 +6,7 @@ app.use(cors());
 app.use(express.json());
 
 let users = [];
-let forceWin = false;  // Server control
+let forceWin = false;   // Server-side control
 
 // Signup
 app.post('/auth/signup', (req, res) => {
@@ -18,7 +18,7 @@ app.post('/auth/signup', (req, res) => {
   res.json({ id: userId, success: true });
 });
 
-// Get users
+// Get users for Admin
 app.get('/users', (req, res) => res.json(users));
 
 // Update balance
@@ -28,18 +28,21 @@ app.post('/update-balance', (req, res) => {
   if (user) {
     user.balance = Number(balance);
     res.json({ success: true });
-  } else res.status(404).json({ message: "User not found" });
+  } else {
+    res.status(404).json({ message: "User not found" });
+  }
 });
 
-// Force Win Endpoints
+// Force Win Status
 app.get('/force-win-status', (req, res) => {
-  res.json({ forceWin });
+  res.json({ forceWin: forceWin });
 });
 
+// Set Force Win from Admin
 app.post('/set-force-win', (req, res) => {
   forceWin = Boolean(req.body.forceWin);
   res.json({ success: true, forceWin });
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
