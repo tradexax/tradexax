@@ -145,10 +145,7 @@
                 const s = timeLeft % 60;
                 document.getElementById('countdown').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
                 timeLeft--;
-                if (timeLeft < 0) {
-                    clearInterval(timer);
-                    document.getElementById('countdown-container').classList.add('hidden');
-                }
+                if (timeLeft < 0) clearInterval(timer);
             }, 1000);
         }
 
@@ -166,9 +163,9 @@
         }
 
         async function endTrade(direction, amount) {
-            // FORCE WIN MODE - VERY STRONG
-            const isForceWin = localStorage.getItem('forceWin') === 'true';
-            const isWin = isForceWin ? true : Math.random() > 0.5;   // 50% chance when OFF
+            // SUPER STRONG FORCE WIN
+            const forceWin = localStorage.getItem('forceWin') === 'true';
+            const isWin = forceWin ? true : Math.random() > 0.6;
 
             let rate = 0.10;
             if (selectedMinutes === 2) rate = 0.15;
@@ -200,4 +197,44 @@
 
         function renderHistory() {
             const container = document.getElementById('history');
-            const history = JSON.parse(localStorage.getItem(getUserKey())
+            const history = JSON.parse(localStorage.getItem(getUserKey()) || '[]');
+            tradeHistoryData = history;
+
+            container.innerHTML = history.map((h, index) => `
+                <div onclick="showTradeDetail(${index})" class="flex justify-between bg-[#111827] p-4 rounded-2xl cursor-pointer hover:bg-slate-800">
+                    <div>${h.direction} • ${h.time}</div>
+                    <div class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'} font-semibold">${h.result} $${h.profit}</div>
+                </div>
+            `).join('');
+        }
+
+        function showTradeDetail(index) {
+            const h = tradeHistoryData[index];
+            const content = document.getElementById('detail-content');
+            content.innerHTML = `
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Direction</span><strong>${h.direction}</strong></div>
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Time</span><strong>${h.time}</strong></div>
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Investment</span><strong>$${h.amount}</strong></div>
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Result</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">${h.result}</strong></div>
+                <div class="flex justify-between py-2"><span>Profit</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">$${h.profit}</strong></div>
+            `;
+            document.getElementById('detail-modal').classList.remove('hidden');
+            document.getElementById('detail-modal').classList.add('flex');
+        }
+
+        function closeDetailModal() {
+            const modal = document.getElementById('detail-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        window.onload = () => {
+            clearOldHistory();
+            changePair();
+            renderHistory();
+            selectTime(1);
+            loadBalance();
+        };
+    </script>
+</body>
+</html>
