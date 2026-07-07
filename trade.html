@@ -85,8 +85,15 @@
         let tradeHistoryData = [];
 
         function getUserKey() {
-            const userId = localStorage.getItem('userId') || 'default';
-            return 'tradeHistory_' + userId;
+            const userId = localStorage.getItem('userId');
+            return userId ? 'tradeHistory_' + userId : 'tradeHistory_guest';
+        }
+
+        function clearOldDataIfNoUser() {
+            if (!localStorage.getItem('loggedIn') || !localStorage.getItem('userId')) {
+                localStorage.removeItem('tradeHistory_guest');
+                localStorage.removeItem('tradeHistory_default');
+            }
         }
 
         function changePair() {
@@ -102,7 +109,10 @@
 
         async function loadBalance() {
             const userId = localStorage.getItem('userId');
-            if (!userId) return 0;
+            if (!userId) {
+                document.getElementById('current-balance').textContent = '$0';
+                return 0;
+            }
             try {
                 const res = await fetch(`${apiBase}/users`);
                 const users = await res.json();
@@ -165,7 +175,7 @@
 
             const profit = isWin ? Math.round(amount * rate) : -amount;
             let current = await loadBalance();
-            const newBalance = current + profit;
+            const newBalance = Math.max(0, current + profit);
 
             await updateBalance(newBalance);
 
@@ -220,6 +230,7 @@
         }
 
         window.onload = () => {
+            clearOldDataIfNoUser();
             changePair();
             renderHistory();
             selectTime(1);
