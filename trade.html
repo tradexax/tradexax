@@ -85,14 +85,18 @@
         let tradeHistoryData = [];
 
         function getUserKey() {
-            const userId = localStorage.getItem('userId');
-            return userId ? 'tradeHistory_' + userId : 'tradeHistory_guest';
+            const userId = localStorage.getItem('userId') || 'guest';
+            return 'tradeHistory_' + userId;
         }
 
-        function clearOldDataIfNoUser() {
+        function clearOldHistory() {
             if (!localStorage.getItem('loggedIn') || !localStorage.getItem('userId')) {
-                localStorage.removeItem('tradeHistory_guest');
-                localStorage.removeItem('tradeHistory_default');
+                // Clear all possible old keys
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('tradeHistory_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
             }
         }
 
@@ -230,7 +234,7 @@
         }
 
         window.onload = () => {
-            clearOldDataIfNoUser();
+            clearOldHistory();
             changePair();
             renderHistory();
             selectTime(1);
