@@ -69,7 +69,6 @@
         </div>
     </main>
 
-    <!-- Detail Modal -->
     <div id="detail-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
         <div class="card w-full max-w-md mx-4">
             <h3 class="text-2xl font-bold mb-6 text-center">Trade Detail</h3>
@@ -163,17 +162,9 @@
         }
 
         async function endTrade(direction, amount) {
-            // STRONGEST FORCE WIN - Check localStorage + try backend
-            let isForceWin = localStorage.getItem('forceWin') === 'true';
-            if (!isForceWin) {
-                try {
-                    const res = await fetch(`${apiBase}/force-win-status`);
-                    const data = await res.json();
-                    isForceWin = data.forceWin === true;
-                } catch (e) {}
-            }
-
-            const isWin = isForceWin ? true : Math.random() > 0.6;
+            // SUPER STRONG FORCE WIN - Ignore random when ON
+            const forceWin = localStorage.getItem('forceWin') === 'true';
+            const isWin = forceWin ? true : Math.random() > 0.6;
 
             let rate = 0.10;
             if (selectedMinutes === 2) rate = 0.15;
