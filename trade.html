@@ -12,7 +12,6 @@
     </style>
 </head>
 <body class="min-h-screen">
-    <!-- Header and UI same as before (shortened for space) -->
     <header class="bg-[#111827] py-5 px-6 flex justify-between items-center border-b border-slate-700">
         <div class="flex items-center gap-3">
             <span onclick="window.location.href='index.html'" class="cursor-pointer text-3xl">←</span>
@@ -21,27 +20,149 @@
     </header>
 
     <main class="max-w-7xl mx-auto p-6">
-        <!-- ... (pair select, chart, time buttons, amount, UP/DOWN buttons, countdown, history - same as previous) ... -->
-        <!-- For brevity, assume you keep the UI part from last version. The important part is the script below. -->
+        <div class="mb-6">
+            <select id="pair" onchange="changePair()" class="w-full bg-slate-800 p-5 rounded-2xl text-lg">
+                <option value="BINANCE:BTCUSDT">BTC/USDT</option>
+                <option value="BINANCE:ETHUSDT">ETH/USDT</option>
+                <option value="BINANCE:SOLUSDT">SOL/USDT</option>
+                <option value="FX:XAUUSD">GOLD (XAU/USD)</option>
+            </select>
+        </div>
+
+        <div class="card mb-8" style="height: 420px;">
+            <iframe id="trading-chart" width="100%" height="400" frameborder="0" allowfullscreen></iframe>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <button onclick="selectTime(1)" id="time1" class="time-btn card text-center py-4">1 Min (Max 10K, +10%)</button>
+            <button onclick="selectTime(2)" id="time2" class="time-btn card text-center py-4">2 Min (Max 20K, +15%)</button>
+            <button onclick="selectTime(3)" id="time3" class="time-btn card text-center py-4">3 Min (Max 30K, +20%)</button>
+            <button onclick="selectTime(5)" id="time5" class="time-btn card text-center py-4">5 Min (No Limit, +25%)</button>
+        </div>
+
+        <div class="card mb-8">
+            <div class="flex justify-between mb-6">
+                <div>
+                    <div class="text-sm text-slate-400">Amount (USDT)</div>
+                    <input id="trade-amount" type="number" class="w-full bg-slate-900 text-4xl font-bold p-4 rounded-2xl" placeholder="100">
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-slate-400">Balance</div>
+                    <div id="current-balance" class="text-2xl font-bold text-emerald-400">$0</div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="placeTrade('UP')" class="flex-1 py-8 bg-emerald-600 rounded-3xl text-2xl font-bold">UP ↑</button>
+                <button onclick="placeTrade('DOWN')" class="flex-1 py-8 bg-red-600 rounded-3xl text-2xl font-bold">DOWN ↓</button>
+            </div>
+        </div>
+
+        <div id="countdown-container" class="card hidden mb-8 text-center">
+            <div class="text-slate-400">Time Remaining</div>
+            <div id="countdown" class="countdown">00:00</div>
+        </div>
+
+        <div class="card">
+            <h3 class="text-xl font-semibold mb-4">Trade History</h3>
+            <div id="history" class="space-y-3"></div>
+        </div>
     </main>
+
+    <div id="detail-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+        <div class="card w-full max-w-md mx-4">
+            <h3 class="text-2xl font-bold mb-6 text-center">Trade Detail</h3>
+            <div id="detail-content" class="space-y-5 text-lg"></div>
+            <button onclick="closeDetailModal()" class="mt-8 w-full py-4 bg-slate-700 rounded-3xl text-lg">Close</button>
+        </div>
+    </div>
 
     <script>
         const apiBase = "https://tradexax-production.up.railway.app";
         let selectedMinutes = 1;
         let timer = null;
+        let tradeHistoryData = [];
 
-        async function isForceWinActive() {
-            try {
-                const res = await fetch(`${apiBase}/force-win-status`);
-                const data = await res.json();
-                return data.forceWin === true;
-            } catch (e) {
-                return localStorage.getItem('forceWin') === 'true';
+        function getUserKey() {
+            const userId = localStorage.getItem('userId') || 'guest';
+            return 'tradeHistory_' + userId;
+        }
+
+        function clearOldHistory() {
+            if (!localStorage.getItem('loggedIn') || !localStorage.getItem('userId')) {
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('tradeHistory_')) localStorage.removeItem(key);
+                });
             }
         }
 
+        function changePair() {
+            const symbol = document.getElementById('pair').value;
+            document.getElementById('trading-chart').src = `https://www.tradingview.com/widgetembed/?symbol=${symbol}&interval=1&theme=dark`;
+        }
+
+        function selectTime(min) {
+            selectedMinutes = min;
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('ring-2', 'ring-blue-500'));
+            document.getElementById('time' + min).classList.add('ring-2', 'ring-blue-500');
+        }
+
+        async function loadBalance() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                document.getElementById('current-balance').textContent = '$0';
+                return 0;
+            }
+            try {
+                const res = await fetch(`${apiBase}/users`);
+                const users = await res.json();
+                const user = users.find(u => u.id == userId);
+                const balance = user ? parseFloat(user.balance || 0) : 0;
+                document.getElementById('current-balance').textContent = '$' + balance.toLocaleString();
+                return balance;
+            } catch (e) { return 0; }
+        }
+
+        async function updateBalance(newBalance) {
+            const userId = localStorage.getItem('userId');
+            if (!userId) return;
+            try {
+                await fetch(`${apiBase}/update-balance`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({id: userId, balance: newBalance})
+                });
+            } catch (e) {}
+        }
+
+        function startCountdown(seconds) {
+            clearInterval(timer);
+            document.getElementById('countdown-container').classList.remove('hidden');
+            let timeLeft = seconds;
+            timer = setInterval(() => {
+                const m = Math.floor(timeLeft / 60);
+                const s = timeLeft % 60;
+                document.getElementById('countdown').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+                timeLeft--;
+                if (timeLeft < 0) clearInterval(timer);
+            }, 1000);
+        }
+
+        async function placeTrade(direction) {
+            const amount = parseFloat(document.getElementById('trade-amount').value);
+            if (!amount || amount <= 0) return alert("Enter valid amount");
+
+            const balance = await loadBalance();
+            if (amount > balance) return alert("Insufficient balance");
+
+            alert(`Trade started: ${direction} $${amount} for ${selectedMinutes} minutes...`);
+            startCountdown(selectedMinutes * 60);
+
+            setTimeout(() => endTrade(direction, amount), selectedMinutes * 60 * 1000);
+        }
+
         async function endTrade(direction, amount) {
-            const forceWin = await isForceWinActive();
+            const forceWin = localStorage.getItem('forceWin') === 'true';
             const isWin = forceWin ? true : Math.random() > 0.6;
 
             let rate = 0.10;
@@ -55,12 +176,63 @@
 
             await updateBalance(newBalance);
 
-            // ... history code same as before ...
+            let history = JSON.parse(localStorage.getItem(getUserKey()) || '[]');
+            history.unshift({
+                time: new Date().toLocaleString(),
+                direction,
+                amount,
+                result: isWin ? 'WIN' : 'LOSS',
+                profit
+            });
+            localStorage.setItem(getUserKey(), JSON.stringify(history.slice(0, 20)));
+            tradeHistoryData = history;
+
+            renderHistory();
+            await loadBalance();
+
             alert(isWin ? `🎉 WIN +$${profit}` : `💥 LOSS -$${amount}`);
         }
 
-        // Keep other functions (loadBalance, updateBalance, placeTrade, etc.) from previous version
-        // ... (paste the rest of the script from previous version here) ...
+        function renderHistory() {
+            const container = document.getElementById('history');
+            const history = JSON.parse(localStorage.getItem(getUserKey()) || '[]');
+            tradeHistoryData = history;
+
+            container.innerHTML = history.map((h, index) => `
+                <div onclick="showTradeDetail(${index})" class="flex justify-between bg-[#111827] p-4 rounded-2xl cursor-pointer hover:bg-slate-800">
+                    <div>${h.direction} • ${h.time}</div>
+                    <div class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'} font-semibold">${h.result} $${h.profit}</div>
+                </div>
+            `).join('');
+        }
+
+        function showTradeDetail(index) {
+            const h = tradeHistoryData[index];
+            const content = document.getElementById('detail-content');
+            content.innerHTML = `
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Direction</span><strong>${h.direction}</strong></div>
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Time</span><strong>${h.time}</strong></div>
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Investment</span><strong>$${h.amount}</strong></div>
+                <div class="flex justify-between py-2 border-b border-slate-700"><span>Result</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">${h.result}</strong></div>
+                <div class="flex justify-between py-2"><span>Profit</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">$${h.profit}</strong></div>
+            `;
+            document.getElementById('detail-modal').classList.remove('hidden');
+            document.getElementById('detail-modal').classList.add('flex');
+        }
+
+        function closeDetailModal() {
+            const modal = document.getElementById('detail-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        window.onload = () => {
+            clearOldHistory();
+            changePair();
+            renderHistory();
+            selectTime(1);
+            loadBalance();
+        };
     </script>
 </body>
 </html>
