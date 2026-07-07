@@ -69,7 +69,7 @@
         </div>
     </main>
 
-    <!-- Trade Detail Modal (Professional like your reference) -->
+    <!-- Trade Detail Modal -->
     <div id="detail-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
         <div class="card w-full max-w-md mx-4">
             <h3 class="text-2xl font-bold mb-6 text-center">Trade Detail</h3>
@@ -83,6 +83,11 @@
         let selectedMinutes = 1;
         let timer = null;
         let tradeHistoryData = [];
+
+        function getUserKey() {
+            const userId = localStorage.getItem('userId') || 'default';
+            return 'tradeHistory_' + userId;
+        }
 
         function changePair() {
             const symbol = document.getElementById('pair').value;
@@ -170,8 +175,7 @@
                 direction,
                 amount,
                 result: isWin ? 'WIN' : 'LOSS',
-                profit,
-                rate: rate * 100
+                profit
             });
             localStorage.setItem(getUserKey(), JSON.stringify(history.slice(0, 20)));
             tradeHistoryData = history;
@@ -180,10 +184,6 @@
             await loadBalance();
 
             alert(isWin ? `🎉 WIN +$${profit}` : `💥 LOSS -$${amount}`);
-        }
-
-        function getUserKey() {
-            return 'tradeHistory_' + (localStorage.getItem('userId') || 'default');
         }
 
         function renderHistory() {
@@ -207,7 +207,7 @@
                 <div class="flex justify-between py-2 border-b border-slate-700"><span>Time</span><strong>${h.time}</strong></div>
                 <div class="flex justify-between py-2 border-b border-slate-700"><span>Investment</span><strong>$${h.amount}</strong></div>
                 <div class="flex justify-between py-2 border-b border-slate-700"><span>Result</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">${h.result}</strong></div>
-                <div class="flex justify-between py-2"><span>Profit</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">$${h.profit} (${h.rate || 10}%)</strong></div>
+                <div class="flex justify-between py-2"><span>Profit</span><strong class="${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">$${h.profit}</strong></div>
             `;
             document.getElementById('detail-modal').classList.remove('hidden');
             document.getElementById('detail-modal').classList.add('flex');
