@@ -12,10 +12,24 @@ let forceWin = false;
 app.post('/auth/signup', (req, res) => {
   const { name, email } = req.body;
   if (!name || !email) return res.status(400).json({ message: "Name and email required" });
+
   const userId = Math.floor(1000 + Math.random() * 9000);
   users.push({ id: userId, name, email, balance: 0 });
   res.json({ id: userId, success: true });
 });
+
+// ==================== NEW: LOGIN ====================
+app.post('/auth/login', (req, res) => {
+  const { email } = req.body;
+  const user = users.find(u => u.email === email);
+  
+  if (user) {
+    res.json({ success: true, id: user.id });
+  } else {
+    res.status(401).json({ success: false, message: "Wrong email or password" });
+  }
+});
+// ===================================================
 
 // Get users
 app.get('/users', (req, res) => res.json(users));
