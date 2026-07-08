@@ -5,30 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auth - TradexaX</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0a0f1c; color: #e2e8f0; }
+        .card { background: #1e2937; border-radius: 20px; padding: 32px; }
+    </style>
 </head>
-<body class="min-h-screen bg-[#0a0f1c] flex items-center justify-center">
-    <div class="w-full max-w-md mx-4 bg-[#1e2937] rounded-3xl p-8">
-        <h1 class="text-3xl font-bold text-center mb-8">TradexaX</h1>
-   
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="card w-full max-w-md">
+        <h1 class="text-4xl font-bold text-center mb-8">TradexaX</h1>
+        
         <div class="flex mb-8 bg-slate-800 rounded-3xl p-1">
-            <button onclick="switchTab(0)" id="login-tab-btn" class="tab tab-active flex-1 py-4 rounded-3xl text-lg font-semibold">Login</button>
+            <button onclick="switchTab(0)" id="login-tab-btn" class="tab tab-active flex-1 py-4 rounded-3xl text-lg font-semibold">Log In</button>
             <button onclick="switchTab(1)" id="signup-tab-btn" class="tab flex-1 py-4 rounded-3xl text-lg font-semibold">Sign Up</button>
         </div>
 
         <!-- Login -->
         <div id="login-tab">
-            <input id="login-email" type="email" placeholder="Email" class="w-full bg-slate-800 p-6 rounded-2xl mb-4">
-            <input id="login-password" type="password" placeholder="Password" class="w-full bg-slate-800 p-6 rounded-2xl mb-6">
-            <button onclick="login()" class="w-full py-6 bg-emerald-600 rounded-3xl text-lg font-semibold">LOGIN</button>
+            <input id="login-email" type="email" placeholder="Email" class="w-full bg-slate-800 p-6 rounded-2xl mb-4 text-lg">
+            <input id="login-password" type="password" placeholder="Password" class="w-full bg-slate-800 p-6 rounded-2xl mb-6 text-lg">
+            <button onclick="login()" class="w-full py-6 bg-emerald-600 rounded-3xl text-xl font-semibold">LOG IN</button>
         </div>
 
         <!-- Sign Up -->
         <div id="signup-tab" class="hidden">
-            <input id="full-name" type="text" placeholder="Full Name" class="w-full bg-slate-800 p-6 rounded-2xl mb-4">
-            <input id="signup-email" type="email" placeholder="Email" class="w-full bg-slate-800 p-6 rounded-2xl mb-4">
-            <input id="signup-password" type="password" placeholder="Create Password" class="w-full bg-slate-800 p-6 rounded-2xl mb-4">
-            <input id="confirm-password" type="password" placeholder="Confirm Password" class="w-full bg-slate-800 p-6 rounded-2xl mb-6">
-            <button onclick="signup()" class="w-full py-6 bg-emerald-600 rounded-3xl text-lg font-semibold">SIGN UP</button>
+            <input id="full-name" type="text" placeholder="Full Name" class="w-full bg-slate-800 p-6 rounded-2xl mb-4 text-lg">
+            <input id="signup-email" type="email" placeholder="Email" class="w-full bg-slate-800 p-6 rounded-2xl mb-4 text-lg">
+            <input id="signup-password" type="password" placeholder="Create Password (min 6 chars)" class="w-full bg-slate-800 p-6 rounded-2xl mb-4 text-lg">
+            <input id="confirm-password" type="password" placeholder="Confirm Password" class="w-full bg-slate-800 p-6 rounded-2xl mb-6 text-lg">
+            <button onclick="signup()" class="w-full py-6 bg-yellow-400 text-black rounded-3xl text-xl font-semibold">SIGN UP</button>
         </div>
     </div>
 
@@ -42,42 +46,66 @@
             document.getElementById('signup-tab-btn').classList.toggle('tab-active', n === 1);
         }
 
-        function login() {
-            localStorage.setItem('loggedIn', 'true');
-            window.location.href = 'index.html';
+        async function login() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!email || !password) return alert("Please enter email and password");
+
+            try {
+                const res = await fetch(`${apiBase}/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    localStorage.setItem('loggedIn', 'true');
+                    localStorage.setItem('userId', data.id);
+                    alert("✅ Login successful!");
+                    window.location.href = 'index.html';
+                } else {
+                    alert(data.message || "Wrong email or password");
+                }
+            } catch (e) {
+                alert("Cannot connect to server. Please try again.");
+            }
         }
 
-        function signup() {
+        async function signup() {
             const name = document.getElementById('full-name').value.trim();
             const email = document.getElementById('signup-email').value.trim();
             const pass = document.getElementById('signup-password').value;
             const confirm = document.getElementById('confirm-password').value;
 
-            if (!name || !email || pass.length < 6) {
-                alert("Please fill all fields correctly");
-                return;
-            }
-            if (pass !== confirm) {
-                alert("Passwords do not match");
-                return;
-            }
+            if (!name || name.length < 3) return alert("Please enter full name");
+            if (!email) return alert("Please enter email");
+            if (pass.length < 6) return alert("Password must be at least 6 characters");
+            if (pass !== confirm) return alert("❌ Passwords do not match");
 
-            fetch(`${apiBase}/auth/signup`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({name, email})
-            })
-            .then(res => res.json())
-            .then(data => {
-                localStorage.setItem('loggedIn', 'true');
-                localStorage.setItem('userId', data.id || Math.floor(1000 + Math.random() * 9000));
-                alert("✅ Account created successfully!");
-                window.location.href = 'index.html';
-            })
-            .catch(() => {
-                alert("Cannot connect to server. Please try again later.");
-            });
+            try {
+                const res = await fetch(`${apiBase}/auth/signup`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, email, password: pass })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    localStorage.setItem('loggedIn', 'true');
+                    localStorage.setItem('userId', data.id);
+                    alert(`✅ Account created!\nUser ID: ${data.id}`);
+                    window.location.href = 'index.html';
+                } else {
+                    alert(data.message || "Sign up failed");
+                }
+            } catch (e) {
+                alert("Cannot connect to server. Please try again.");
+            }
         }
+
+        window.onload = () => switchTab(0);
     </script>
 </body>
 </html>
