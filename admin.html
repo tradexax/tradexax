@@ -15,7 +15,7 @@
 <body class="min-h-screen p-8">
     <div class="max-w-7xl mx-auto">
         <h1 class="text-4xl font-bold mb-10 text-center">ADMIN DASHBOARD</h1>
-        
+       
         <!-- Tabs -->
         <div class="bg-[#1e2937] p-1 rounded-3xl flex mb-8 overflow-x-auto">
             <button onclick="switchTab(0)" class="tab tab-active flex-1 py-4 rounded-3xl text-lg font-medium">Dashboard</button>
@@ -28,10 +28,11 @@
         <!-- Dashboard -->
         <div id="tab0" class="card">
             <h2 class="text-2xl font-semibold mb-6">Force Winning Mode</h2>
-            <label class="flex items-center gap-4">
-                <input id="force-win" type="checkbox" onchange="toggleForceWin()" class="w-6 h-6">
-                <span id="force-win-label">OFF</span>
+            <label class="flex items-center gap-4 text-lg">
+                <input id="force-win" type="checkbox" onchange="toggleForceWin()" class="w-6 h-6 accent-blue-500">
+                <span id="force-win-label" class="font-medium">OFF</span>
             </label>
+            <p class="text-sm text-slate-400 mt-2">When ON, all trades will win (server controlled)</p>
         </div>
 
         <!-- Users -->
@@ -72,13 +73,11 @@
             <button onclick="saveWallets()" class="mt-8 w-full py-4 bg-blue-600 rounded-3xl text-lg font-semibold">Save All Wallets</button>
         </div>
 
-        <!-- Loans -->
+        <!-- Loans & Tickets (simple for now) -->
         <div id="tab3" class="card hidden">
             <h2 class="text-2xl font-semibold mb-6">Loan Requests</h2>
             <p class="text-slate-400">No loan requests yet.</p>
         </div>
-
-        <!-- Tickets -->
         <div id="tab4" class="card hidden">
             <h2 class="text-2xl font-semibold mb-6">Withdraw Tickets</h2>
             <p class="text-slate-400">No withdraw requests yet.</p>
@@ -113,7 +112,7 @@
                     </div>
                 `).join('') : '<p class="text-slate-400">No users yet.</p>';
             } catch (e) {
-                container.innerHTML = '<p class="text-red-400">Cannot connect to server. Check backend.</p>';
+                container.innerHTML = '<p class="text-red-400">Cannot connect to server.</p>';
             }
         }
 
@@ -143,15 +142,31 @@
             alert("✅ All Wallets Saved Successfully!");
         }
 
-        function toggleForceWin() {
+        async function toggleForceWin() {
             const isOn = document.getElementById('force-win').checked;
             localStorage.setItem('forceWin', isOn);
             document.getElementById('force-win-label').textContent = isOn ? "ON" : "OFF";
+
+            // Send to server
+            try {
+                await fetch(`${apiBase}/set-force-win`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ forceWin: isOn })
+                });
+            } catch (e) {
+                console.log("Server not reachable, using local mode");
+            }
         }
 
         window.onload = () => {
-            switchTab(1); // Start on Users tab
+            switchTab(0); // Start on Dashboard (Force Win)
             loadUsers();
+            
+            // Load current force win state
+            const saved = localStorage.getItem('forceWin') === 'true';
+            document.getElementById('force-win').checked = saved;
+            document.getElementById('force-win-label').textContent = saved ? "ON" : "OFF";
         };
     </script>
 </body>
