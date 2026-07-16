@@ -18,6 +18,7 @@
             <h1 class="text-2xl font-bold">TradexaX</h1>
         </div>
     </header>
+
     <main class="max-w-7xl mx-auto p-6">
         <div class="mb-6">
             <select id="pair" onchange="changePair()" class="w-full bg-slate-800 p-5 rounded-2xl text-lg">
@@ -27,15 +28,18 @@
                 <option value="FX:XAUUSD">GOLD (XAU/USD)</option>
             </select>
         </div>
+
         <div class="card mb-8" style="height: 420px;">
             <iframe id="trading-chart" width="100%" height="400" frameborder="0" allowfullscreen></iframe>
         </div>
+
         <div class="grid grid-cols-2 gap-4 mb-8">
             <button onclick="selectTime(1)" id="time1" class="time-btn card text-center py-4">1 Min (Max 10K, +10%)</button>
             <button onclick="selectTime(2)" id="time2" class="time-btn card text-center py-4">2 Min (Max 20K, +15%)</button>
             <button onclick="selectTime(3)" id="time3" class="time-btn card text-center py-4">3 Min (Max 30K, +20%)</button>
             <button onclick="selectTime(5)" id="time5" class="time-btn card text-center py-4">5 Min (No Limit, +25%)</button>
         </div>
+
         <div class="card mb-8">
             <div class="flex justify-between mb-6">
                 <div>
@@ -47,20 +51,24 @@
                     <div id="current-balance" class="text-2xl font-bold text-emerald-400">$0</div>
                 </div>
             </div>
+
             <div class="flex gap-4">
                 <button onclick="placeTrade('UP')" class="flex-1 py-8 bg-emerald-600 rounded-3xl text-2xl font-bold">UP ↑</button>
                 <button onclick="placeTrade('DOWN')" class="flex-1 py-8 bg-red-600 rounded-3xl text-2xl font-bold">DOWN ↓</button>
             </div>
         </div>
+
         <div id="countdown-container" class="card hidden mb-8 text-center">
             <div class="text-slate-400">Time Remaining</div>
             <div id="countdown" class="countdown">00:00</div>
         </div>
+
         <div class="card">
             <h3 class="text-xl font-semibold mb-4">Trade History</h3>
             <div id="history" class="space-y-3"></div>
         </div>
     </main>
+
     <div id="detail-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
         <div class="card w-full max-w-md mx-4">
             <h3 class="text-2xl font-bold mb-6 text-center">Trade Detail</h3>
@@ -81,11 +89,13 @@
         }
 
         async function isForceWinActive() {
+            // Try server first
             try {
                 const res = await fetch(`${apiBase}/force-win-status`);
                 const data = await res.json();
                 return data.forceWin === true;
             } catch (e) {
+                // Fallback to localStorage
                 return localStorage.getItem('forceWin') === 'true';
             }
         }
@@ -160,7 +170,7 @@
 
         async function endTrade(direction, amount) {
             const forceWin = await isForceWinActive();
-            const isWin = forceWin ? true : Math.random() > 0.6;   // Strong force
+            const isWin = forceWin ? true : Math.random() > 0.6;
 
             let rate = 0.10;
             if (selectedMinutes === 2) rate = 0.15;
