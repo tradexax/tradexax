@@ -80,11 +80,13 @@
             return 'tradeHistory_' + userId;
         }
 
-        function clearOldHistory() {
-            if (!localStorage.getItem('loggedIn') || !localStorage.getItem('userId')) {
-                Object.keys(localStorage).forEach(key => {
-                    if (key.startsWith('tradeHistory_')) localStorage.removeItem(key);
-                });
+        async function isForceWinActive() {
+            try {
+                const res = await fetch(`${apiBase}/force-win-status`);
+                const data = await res.json();
+                return data.forceWin === true;
+            } catch (e) {
+                return localStorage.getItem('forceWin') === 'true';
             }
         }
 
@@ -157,8 +159,8 @@
         }
 
         async function endTrade(direction, amount) {
-            const forceWin = localStorage.getItem('forceWin') === 'true';
-            const isWin = forceWin ? true : Math.random() > 0.6;
+            const forceWin = await isForceWinActive();
+            const isWin = forceWin ? true : Math.random() > 0.6;   // Strong force
 
             let rate = 0.10;
             if (selectedMinutes === 2) rate = 0.15;
